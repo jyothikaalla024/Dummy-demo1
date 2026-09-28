@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: traffic-client
+spec:
+  restartPolicy: Never
+  containers:
+    - name: client
+      image: curlimages/curl
+      command: ["sh", "/scripts/traffic-check.sh"]
+      volumeMounts:
+        - name: script
+          mountPath: /scripts
+  volumes:
+    - name: script
+      configMap:
+        name: traffic-script
