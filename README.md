@@ -662,5 +662,9 @@ dummy-svc-644bd6765b-gqc2g   0/1     Running             0          22m
 dummy-svc-644bd6765b-gqc2g   1/1     Running             0          22m
 <img width="1470" height="956" alt="Screenshot 2026-09-28 at 20 31 22" src="https://github.com/user-attachments/assets/0459f44b-699f-41a6-95bb-97d64ad6a1e7" />
 <img width="1470" height="956" alt="Screenshot 2026-09-28 at 20 32 52" src="https://github.com/user-attachments/assets/e9cfe260-3f0d-48a4-ae50-b1254e0e3b0d" />
+<img width="1470" height="956" alt="Screenshot 2026-09-28 at 20 32 52" src="https://github.com/user-attachments/assets/282bd5ae-60cf-494d-a70c-b1f997ed04ee" />
+<img width="1470" height="956" alt="Screenshot 2026-09-28 at 20 32 52" src="https://github.com/user-attachments/assets/5c5dfed7-feaf-4da8-b7c9-ac28a642569d" />
+
+
 
 
