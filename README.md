@@ -266,159 +266,7 @@ alla\@Jyothikas-MacBook-Air dummy-demo1 % kubectl --context kind-demo get pods
 
 No resources found in default namespace.
 
-alla\@Jyothikas-MacBook-Air dummy-demo1 % >....                                                                                                                                                                 
 
-  name: dummy-svc
-
-spec:
-
-  replicas: 2
-
-  minReadySeconds: 5
-
-  progressDeadlineSeconds: 90
-
-  revisionHistoryLimit: 5
-
-  strategy:
-
-    type: RollingUpdate
-
-    rollingUpdate:
-
-      maxUnavailable: 0
-
-      maxSurge: 1
-
-  selector:
-
-    matchLabels:
-
-      app: dummy-svc
-
-  template:
-
-    metadata:
-
-      labels:
-
-        app: dummy-svc
-
-    spec:
-
-      securityContext:
-
-        runAsNonRoot: true
-
-        runAsUser: 10001
-
-      containers:
-
-        - name: app
-
-          image: dummy-svc:1.0.0
-
-          imagePullPolicy: IfNotPresent
-
-          ports:
-
-            - containerPort: 8080
-
-          env:
-
-            - name: APP_VERSION
-
-              value: "v1"
-
-            - name: READY_DELAY_SECONDS
-
-              value: "0"
-
-            - name: NEVER_READY
-
-              value: "false"
-
-          startupProbe:
-
-            httpGet:
-
-              path: /health
-
-              port: 8080
-
-            periodSeconds: 2
-
-            failureThreshold: 15
-
-          readinessProbe:
-
-            httpGet:
-
-              path: /ready
-
-              port: 8080
-
-            periodSeconds: 2
-
-            failureThreshold: 2
-
-          livenessProbe:
-
-            httpGet:
-
-              path: /health
-
-              port: 8080
-
-            periodSeconds: 10
-
-            failureThreshold: 3
-
-          resources:
-
-            requests:
-
-              cpu: 50m
-
-              memory: 32Mi
-
-            limits:
-
-              cpu: 200m
-
-              memory: 64Mi
-
-          securityContext:
-
-            allowPrivilegeEscalation: false
-
-EOF
-
-alla\@Jyothikas-MacBook-Air dummy-demo1 % cat > k8s/service.yaml << 'EOF'
-
-apiVersion: v1
-
-kind: Service
-
-metadata:
-
-  name: dummy-svc
-
-spec:
-
-  type: ClusterIP
-
-  selector:
-
-    app: dummy-svc
-
-  ports:
-
-    - port: 80
-
-      targetPort: 8080
-
-EOF
 
 alla\@Jyothikas-MacBook-Air dummy-demo1 % ls k8s/
 
@@ -666,43 +514,6 @@ alla\@Jyothikas-MacBook-Air dummy-demo1 % kubectl --context kind-demo create con
 
 configmap/traffic-script created                      
 
-alla\@Jyothikas-MacBook-Air dummy-demo1 % cat > k8s/client.yaml << 'EOF'
-
-apiVersion: v1                                        
-
-kind: Pod                                             
-
-metadata:                                             
-
-  name: traffic-client                                
-
-spec:                                                 
-
-  restartPolicy: Never                                
-
-  containers:                                         
-
-    - name: client                                    
-
-      image: curlimages/curl                          
-
-      command: ["sh", "/scripts/traffic-check.sh"]    
-
-      volumeMounts:                                   
-
-        - name: script                                
-
-          mountPath: /scripts                         
-
-  volumes:                                            
-
-    - name: script                                    
-
-      configMap:                                      
-
-        name: traffic-script                          
-
-EOF                                                   
 
 alla\@Jyothikas-MacBook-Air dummy-demo1 %              
 
@@ -769,5 +580,84 @@ timestamp,status,version,pod                          
 2026-09-28T13:08:24Z,200,v1,dummy-svc-5cd9f5cb46-bbfsk
 
 2026-09-28T13:08:25Z ,200,v1,dummy-svc-5cd9f5cb46-bbfsk
+alla@Jyothikas-MacBook-Air dummy-demo1 % kubectl --context kind-demo get pods -w
+NAME                         READY   STATUS    RESTARTS   AGE
+dummy-svc-75bd9d97cb-rflj5   1/1     Running   0          2m7s
+dummy-svc-75bd9d97cb-xsv7m   1/1     Running   0          90s
+traffic-client               1/1     Running   0          6m33s
 
-EOF        
+^C%                                                                                                                                                                                                            alla@Jyothikas-MacBook-Air dummy-demo1 % scripts/summarize.sh evidence/traffic.csv | tee evidence/v2-summary.txt
+kubectl --context kind-demo get pods,endpointslices -o wide | tee -a evidence/v2-rollout.txt
+total requests: 505
+successes (200): 505
+failures (non-200 or curl error): 0
+--- version / status counts ---
+v2 200 194
+v1 200 311
+NAME                             READY   STATUS    RESTARTS   AGE     IP            NODE                 NOMINATED NODE   READINESS GATES
+pod/dummy-svc-75bd9d97cb-rflj5   1/1     Running   0          4m10s   10.244.0.11   demo-control-plane   <none>           <none>
+pod/dummy-svc-75bd9d97cb-xsv7m   1/1     Running   0          3m33s   10.244.0.12   demo-control-plane   <none>           <none>
+pod/traffic-client               1/1     Running   0          8m36s   10.244.0.10   demo-control-plane   <none>           <none>
+
+NAME                                             ADDRESSTYPE   PORTS   ENDPOINTS                 AGE
+endpointslice.discovery.k8s.io/dummy-svc-vv46t   IPv4          8080    10.244.0.11,10.244.0.12   13m
+endpointslice.discovery.k8s.io/kubernetes        IPv4          6443    172.19.0.2                19m
+alla@Jyothikas-MacBook-Air dummy-demo1 % >....                                                                                                                                                                 
+    echo "$TS,$CODE,${VER:--},${POD:--}"              
+  fi                                                  
+  sleep 1                                             
+done                                                  
+EOF                                                   
+alla@Jyothikas-MacBook-Air dummy-demo1 % kubectl --context kind-demo create configmap traffic-script --from-file=scripts/traffic-check.sh
+configmap/traffic-script created                      
+alla@Jyothikas-MacBook-Air dummy-demo1 % cat > k8s/client.yaml << 'EOF'
+apiVersion: v1                                        
+kind: Pod                                             
+metadata:                                             
+  name: traffic-client                                
+spec:                                                 
+  restartPolicy: Never                                
+  containers:                                         
+    - name: client                                    
+      image: curlimages/curl                          
+      command: ["sh", "/scripts/traffic-check.sh"]    
+      volumeMounts:                                   
+        - name: script                                
+          mountPath: /scripts                         
+  volumes:                                            
+    - name: script                                    
+      configMap:                                      
+        name: traffic-script                          
+EOF                                                   
+alla@Jyothikas-MacBook-Air dummy-demo1 %              
+kubectl --context kind-demo apply -f k8s/client.yaml  
+pod/traffic-client created                            
+alla@Jyothikas-MacBook-Air dummy-demo1 % kubectl --context kind-demo wait --for=condition=Ready pod/traffic-client --timeout=60s
+pod/traffic-client condition met  alla@Jyothikas-MacBook-Air dummy-demo1 % kubectl patch deployment dummy-svc -p \
+'{"spec":{"template":{"metadata":{"annotations":{"demo-rollout":"v2-"}}}}}'
+deployment.apps/dummy-svc patched
+alla@Jyothikas-MacBook-Air dummy-demo1 % kubectl patch deployment dummy-svc -p \
+"{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"demo-rollout\":\"$(date +%s)\"}}}}}"
+deployment.apps/dummy-svc patched
+alla@Jyothikas-MacBook-Air dummy-demo1 % kubectl get pods -w
+NAME                         READY   STATUS        RESTARTS   AGE
+dummy-svc-644bd6765b-zpj9j   0/1     Running       0          15s
+dummy-svc-6dd96d879f-zlbsf   0/1     Terminating   0          25s
+dummy-svc-75bd9d97cb-rflj5   1/1     Running       0          79m
+dummy-svc-75bd9d97cb-xsv7m   1/1     Running       0          79m
+traffic-client               1/1     Running       0          84m
+dummy-svc-6dd96d879f-zlbsf   1/1     Terminating   0          34s
+dummy-svc-6dd96d879f-zlbsf   0/1     Error         0          40s
+dummy-svc-6dd96d879f-zlbsf   0/1     Error         0          40s
+dummy-svc-6dd96d879f-zlbsf   0/1     Error         0          40s
+dummy-svc-644bd6765b-zpj9j   1/1     Running       0          33s
+dummy-svc-75bd9d97cb-xsv7m   1/1     Terminating   0          79m
+dummy-svc-75bd9d97cb-xsv7m   1/1     Terminating   0          79m
+dummy-svc-644bd6765b-gqc2g   1/1     Running             0          32s
+dummy-svc-75bd9d97cb-rflj5   1/1     Terminating         0          80m
+dummy-svc-75bd9d97cb-rflj5   1/1     Terminating         0          80m
+dummy-svc-644bd6765b-gqc2g   0/1     Running             0          21m
+dummy-svc-644bd6765b-gqc2g   1/1     Running             0          21m
+dummy-svc-644bd6765b-gqc2g   0/1     Running             0          22m
+dummy-svc-644bd6765b-gqc2g   1/1     Running             0          22m
+
