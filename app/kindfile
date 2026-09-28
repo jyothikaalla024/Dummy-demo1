@@ -1,0 +1,10 @@
+check() {
+  date
+  for p in 8081 8082 8083; do
+    echo "== port $p =="
+    for e in health ready version; do
+      echo -n "/$e -> "; curl -s -o /dev/null -w "%{http_code}\n" localhost:$p/$e
+    done
+  done
+}
+check | tee evidence/direct-checks.txt
